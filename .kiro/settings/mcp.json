@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "kernelforge-nki-mcp": {
+      "command": "uvx",
+      "args": [
+        "kernelforge-nki-mcp@latest"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "nki_discover_kernels",
+        "nki_skill_lookup"
+      ]
+    }
+  }
+}

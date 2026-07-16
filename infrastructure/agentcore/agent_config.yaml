@@ -1,0 +1,104 @@
+# =============================================================================
+# AgentCore Runtime Configuration -- ATX NKI Agent
+# =============================================================================
+# Parameters for deploying the NKI kernel optimization agent on
+# Amazon Bedrock AgentCore.
+
+agent:
+  name: atx-nki-agent
+  description: "PyTorch / Triton -> NKI kernel optimization agent for AWS Trainium"
+  version: "0.1.0"
+
+  runtime:
+    timeout_seconds: 1800        # 30-minute hard cap per invocation
+    memory_mb: 8192
+    ephemeral_storage_mb: 4096
+    concurrency: 5
+
+  # ---------------------------------------------------------------------------
+  # Pluggable model backends — the agent's router picks per task.
+  # ---------------------------------------------------------------------------
+  models:
+    default: "auto"
+    backends:
+      opus-4-8:
+        provider: bedrock
+        model_id: "us.anthropic.claude-opus-4-8"  # cross-region inference-profile ID; the bare model ID is rejected for on-demand invocation
+        region: us-east-1
+        inference_config:
+          max_tokens: 16384
+          temperature: 0.5
+          top_p: 0.95
+      qwen3-sft-v4:
+        provider: bedrock-cmi
+        model_arn: "arn:aws:bedrock:us-east-1:000000000000:imported-model/qwen3-coder-30b-sft-v4"
+        region: us-east-1
+        inference_config:
+          max_tokens: 16384
+          temperature: 0.6
+          top_p: 0.95
+      vllm:
+        provider: openai-compat
+        endpoint: "https://vllm.internal.invalid/v1"
+        model: "qwen3-coder-30b-sft-v4"
+        inference_config:
+          max_tokens: 16384
+          temperature: 0.6
+          top_p: 0.95
+
+  # ---------------------------------------------------------------------------
+  # Router policy
+  # ---------------------------------------------------------------------------
+  router:
+    skill_score_threshold: 0.75      # >= picks qwen3-sft-v4, else opus-4-8
+    escalate_after_failures: 2       # qwen3 -> opus after N consecutive fails
+    pinned_models_disable_escalation: true
+
+  session:
+    memory_enabled: true
+    max_session_duration: 3600
+    memory_type: "session"
+    max_history_messages: 100
+
+  tools:
+    - compile_nki_kernel
+    - verify_nki_kernel
+    - profile_nki_kernel
+    - lookup_nki_skill
+
+  environment:
+    NEURON_SDK_VERSION: "2.21"
+    # The reward server's direct private IP:5050 (the RewardUrlPrivate stack
+    # output from reward_server_cdk) — set at deploy time by repoint-agentcore.sh.
+    # The runtime reaches it directly over SG-to-SG networking, plain HTTP,
+    # no signing; the security group is the access control.
+    REWARD_SERVER_URL: "http://REPLACE_WITH_REWARD_SERVER_PRIVATE_IP:5050"
+    PYTHONPATH: "/opt/agent"
+
+  security:
+    policy_file: "policy.cedar"
+    sandbox:
+      enabled: true
+      network_policy: "restricted"
+      allowed_endpoints:
+        - "bedrock.us-east-1.amazonaws.com"
+        - "bedrock-runtime.us-east-1.amazonaws.com"
+    secrets: []
+
+  observability:
+    log_level: "INFO"
+    trace_enabled: true
+    metrics_namespace: "ATXNKIAgent"
+    cloudwatch_log_group: "/agentcore/atx-nki-agent"
+
+  deployment:
+    entry_point: "agentcore/app.py"
+    handler: "app.handler"
+    packaging: "zip"
+    include_paths:
+      - "agentcore/"
+    exclude_patterns:
+      - "**/__pycache__/"
+      - "*.pyc"
+      - "tests/"
+      - ".git/"

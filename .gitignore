@@ -1,0 +1,69 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.envrc
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Blog drafts (not published via the repo)
+blog/
+
+# Build artifacts
+*.neff
+*.so
+*.o
+
+# Logs
+*.log
+logs/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+.uv/
+
+# AgentCore CDK scaffold artifacts
+infrastructure/agentcore_cdk/**/node_modules/
+infrastructure/agentcore_cdk/**/.cli/
+infrastructure/agentcore_cdk/**/cdk.out/
+infrastructure/agentcore_cdk/**/dist/
+infrastructure/agentcore_cdk/**/cdk/dist/
+infrastructure/agentcore_cdk/**/.cache/
+
+# AgentCore CLI-generated deploy state (contains real account IDs / ARNs / IPs)
+infrastructure/agentcore_cdk/**/agentcore.json
+infrastructure/agentcore_cdk/**/aws-targets.json
+infrastructure/agentcore_cdk/**/.env.local
+
+# ash
+.ash/
+
+# drawio backups
+.$*.drawio.bkp
+
+# chat backups
+chat.json
+
+# Kept local, not published: recording scratch + smoke-test scratch
+examples/cuda_rmsnorm_migration/demo_typed.sh
+examples/cuda_rmsnorm_migration/demo_transcript.txt
+examples/cuda_rmsnorm_migration/atx-nki-demo.cast
+examples/cuda_rmsnorm_migration/atx-nki-demo.mp4
+results/_smoke_opus48.json
+results/_smoke_opus48.details.json

@@ -1,0 +1,50 @@
+{
+  "source_kernel": "rmsnorm_cuda_input.py (hand-written CUDA custom kernel)",
+  "reference": "rmsnorm_reference.py (RMSNormReference)",
+  "model_used": "opus-4-8",
+  "model_id": "us.anthropic.claude-opus-4-8",
+  "input_specs": [
+    {
+      "shape": [
+        4096,
+        4096
+      ],
+      "dtype": "float32"
+    }
+  ],
+  "compile": {
+    "compile_time_s": 9.05,
+    "errors": [],
+    "neff_path": "/tmp/nki_kernel.neff",
+    "returncode": 0,
+    "stderr_tail": [],
+    "success": true,
+    "warnings": []
+  },
+  "verify": {
+    "atol": 0.001,
+    "correct": true,
+    "error": null,
+    "max_abs_error": 0.00021076202392578125,
+    "max_rel_error": 4.4277101925534415e-05,
+    "mismatched_elements": 0,
+    "rtol": 0.001,
+    "total_elements": 16777216,
+    "verify_time_s": 10.7
+  },
+  "profile": {
+    "error": null,
+    "flops_utilization": null,
+    "latency_max_us": 547.0,
+    "latency_mean_us": 544.0,
+    "latency_median_us": 544.0,
+    "latency_min_us": 541.0,
+    "latency_p99_us": 546.0,
+    "measure_runs": 50,
+    "profile_time_s": 8.91,
+    "success": true,
+    "throughput_ops_per_s": 1838.235294117647,
+    "warmup_runs": 5
+  },
+  "device": "trn1.2xlarge (real Trainium silicon)"
+}

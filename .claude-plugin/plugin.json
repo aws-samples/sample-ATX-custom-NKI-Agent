@@ -1,0 +1,11 @@
+{
+  "name": "kernel-forge-aws-transform",
+  "displayName": "Kernel Forge — PyTorch/Triton → NKI",
+  "description": "Convert PyTorch and Triton kernels to NKI for AWS Trainium. Compile, verify on real silicon, and profile against the eager baseline.",
+  "version": "0.1.0",
+  "license": "MIT-0",
+  "skills": [
+    "skills/nki-kernel"
+  ],
+  "mcp": ".mcp.json"
+}

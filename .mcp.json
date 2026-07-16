@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "kernelforge-nki-mcp": {
+      "command": "uvx",
+      "args": [
+        "kernelforge-nki-mcp@latest"
+      ]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnforceAgentCoreRuntimeNetworkConfig",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:UpdateAgentRuntime"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ForAnyValue:StringNotEquals": {
+          "bedrock-agentcore:securityGroups": ["<AgentCoreClientSg-id>"]
+        }
+      }
+    }
+  ]
+}

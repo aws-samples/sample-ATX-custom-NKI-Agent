@@ -1,0 +1,32 @@
+{
+  "backend": "agentcore",
+  "model": "arn:aws:bedrock-agentcore:us-east-1:XXXXXXXXXXXX:runtime/atxnkiagent_nki_agent-ga37K3Co52",
+  "mode": "nkiagent",
+  "max_turns": 10,
+  "total": 150,
+  "compiled": 125,
+  "correct": 63,
+  "compile_rate": 83.3,
+  "correct_rate": 42.0,
+  "verifiable_total": 57,
+  "verifiable_correct": 50,
+  "verifiable_correct_rate": 87.7,
+  "unverifiable_excluded": 93,
+  "by_level": {
+    "1": {
+      "total": 50,
+      "compiled": 46,
+      "correct": 38
+    },
+    "2": {
+      "total": 50,
+      "compiled": 41,
+      "correct": 19
+    },
+    "3": {
+      "total": 50,
+      "compiled": 38,
+      "correct": 6
+    }
+  }
+}

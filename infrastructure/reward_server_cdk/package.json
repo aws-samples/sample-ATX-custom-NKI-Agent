@@ -1,0 +1,27 @@
+{
+  "name": "nki-reward-server-cdk",
+  "version": "0.1.0",
+  "description": "CDK stack that provisions the Trn1 reward server from scratch",
+  "private": true,
+  "bin": {
+    "nki-reward-server-cdk": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "bootstrap": "cdk bootstrap",
+    "deploy": "cdk deploy",
+    "diff": "cdk diff",
+    "destroy": "cdk destroy"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "aws-cdk": "^2.1131.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.261.0",
+    "constructs": "^10.7.0"
+  }
+}
