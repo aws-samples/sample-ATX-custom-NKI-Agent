@@ -14,12 +14,17 @@ The chain has two tiers, and this file exercises both:
   * **Live / on-device (runs when ``NKI_LIVE=1`` and ``AGENTCORE_ARN`` set):**
     `nki_generate_kernel` -> AgentCore -> reward server, which compiles,
     verifies, and profiles a kernel on a real Trainium device. This pins the
-    MCP -> AgentCore -> reward-server links against real silicon.
+    MCP -> AgentCore -> reward-server links against real silicon. It drives the
+    runtime in ``multi_turn`` mode — the compile-verify-fix loop the documented
+    migration path uses — so a first-try compiler error is repaired rather than
+    terminal.
 
 Run everything hardware-free:
     pytest tests/test_integration_chain.py
 
-Run including the live on-device leg (needs AWS creds + a deployed runtime):
+Run including the live on-device leg (needs AWS creds + a deployed runtime, plus
+boto3 — `uv run --with boto3 --with pytest python -m pytest ...` if your venv
+lacks it):
     NKI_LIVE=1 \
     AGENTCORE_ARN=arn:aws:bedrock-agentcore:us-east-1:...:runtime/... \
     AWS_REGION=us-east-1 \
@@ -30,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 
 import pytest
@@ -130,29 +136,31 @@ _LIVE_SKIP = pytest.mark.skipif(
 
 
 def _reference_source() -> str:
+    """The PyTorch reference the device compares against.
+
+    Must define a module-level ``reference(*args)`` function: the reward
+    server's verify op imports this source and exits (code 6) if no such
+    function exists, so a bare ``nn.Module`` subclass never gets verified.
+    Weight is omitted deliberately — it is all-ones in the CUDA original, so
+    the identity multiply adds nothing to compare against.
+    """
     return (
         "import torch\n"
-        "class RMSNormReference(torch.nn.Module):\n"
-        "    def __init__(self, hidden=4096, eps=1e-6):\n"
-        "        super().__init__()\n"
-        "        self.weight = torch.nn.Parameter(torch.ones(hidden))\n"
-        "        self.eps = eps\n"
-        "    def forward(self, x):\n"
-        "        v = x.pow(2).mean(dim=-1, keepdim=True)\n"
-        "        return x * torch.rsqrt(v + self.eps) * self.weight\n"
+        "def reference(x):\n"
+        "    v = x.pow(2).mean(dim=-1, keepdim=True)\n"
+        "    return x * torch.rsqrt(v + 1e-6)\n"
     )
 
 
 def _invoke_runtime(payload: dict) -> dict:
     """Drive the deployed AgentCore runtime the way the eval/smoke path does."""
-    import time
     import boto3
     from botocore.config import Config as BotoConfig
 
     client = boto3.Session().client(
         "bedrock-agentcore",
         region_name=_REGION,
-        config=BotoConfig(read_timeout=280, connect_timeout=30, retries={"max_attempts": 1}),
+        config=BotoConfig(read_timeout=400, connect_timeout=30, retries={"max_attempts": 1}),
     )
     session_id = f"itest-{int(time.time())}".ljust(33, "x")[:33]
     resp = client.invoke_agent_runtime(
@@ -175,6 +183,14 @@ def test_live_migration_compiles_and_verifies_on_device() -> None:
 
     Asserts the reward server actually compiled and numerically verified the
     migrated RMSNorm kernel — the ground-truth link the whole design rests on.
+
+    Runs in ``multi_turn`` mode, the same mode the documented migration path
+    uses (``examples/cuda_rmsnorm_migration/run_migration.py``). The mode choice
+    is load-bearing, not incidental: only multi-turn has the compile-verify-fix
+    loop, where a rejected kernel comes back with the ``neuronx-cc`` error and
+    gets repaired. ``single_shot`` emits one candidate and stops, so a first-try
+    compile error is terminal — it cannot reach a verified kernel, and asserting
+    verification against it would test a path the agent does not ship.
     """
     payload = {
         "task_spec": {
@@ -188,18 +204,53 @@ def test_live_migration_compiles_and_verifies_on_device() -> None:
             "constraints": {"atol": 1e-3, "rtol": 1e-3},
             "model_pin": None,
         },
-        "mode": "single_shot",
+        "mode": "multi_turn",
+        "max_turns": 10,
     }
-    result = _invoke_runtime(payload)
+    # Bedrock intermittently returns InternalServerException / ServiceUnavailable
+    # after exhausting its own retries. The runtime's converse loop treats that as
+    # terminal (`break`) and logs the reason only to CloudWatch, so the response
+    # is status="failed" with NO compile block, NO verify block and error=None.
+    #
+    # That combination is the signature to retry on: a genuine generation failure
+    # always reaches the reward server at least once, so it carries a compile or
+    # verify block. Deliberately not keyed on turns_used — the capacity error can
+    # land on any turn (turn 2 is common, after a token-refresh `continue`).
+    for attempt in range(3):
+        result = _invoke_runtime(payload)
+        transient = (
+            result.get("status") == "failed"
+            and not result.get("compile")
+            and not result.get("verify")
+        )
+        if not transient:
+            break
+        if attempt < 2:
+            time.sleep(20 * (attempt + 1))
+    else:
+        pytest.skip(
+            "Bedrock returned a capacity error (InternalServerException / "
+            "ServiceUnavailableException) on 3 consecutive attempts — see the "
+            "runtime's CloudWatch logs. Not a kernel or reward-server failure."
+        )
 
-    assert result.get("status") == "success", result.get("error")
+    assert result.get("status") == "success", (
+        f"status={result.get('status')} after {result.get('turns_used')} turns; "
+        f"compile={result.get('compile')} verify={result.get('verify')} "
+        f"error={result.get('error')}"
+    )
     assert result.get("kernel_source"), "no kernel_source returned"
 
-    compile_r = result.get("compile") or {}
-    assert compile_r.get("success") is True, f"compile failed: {compile_r.get('errors')}"
+    # Assert on the top-level booleans, the way run_migration.py does. The
+    # nested `compile` block is whichever tool result last reported a
+    # compile — `compile_nki_kernel` (which returns `success`) or
+    # `verify_nki_kernel` (which returns `compiled` and no `success` key), so
+    # its shape depends on which tool the model chose to call.
+    assert result.get("compiled") is True, f"compile failed: {result.get('compile')}"
 
     verify_r = result.get("verify") or {}
-    assert verify_r.get("correct") is True, (
+    assert result.get("correct") is True, (
         f"numerical verification failed on device: max_abs_error="
-        f"{verify_r.get('max_abs_error')}"
+        f"{verify_r.get('max_abs_error')} mismatched="
+        f"{verify_r.get('mismatched_elements')}/{verify_r.get('total_elements')}"
     )
