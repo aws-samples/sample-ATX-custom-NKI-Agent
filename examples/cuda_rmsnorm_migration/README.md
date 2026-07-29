@@ -30,17 +30,22 @@ mismatched), and profiles at 544 µs median** on a real `trn1.2xlarge`.
 
 The [`atx` CLI](https://aws.amazon.com/transform/) is one client of the
 `kernelforge-nki-mcp` MCP server (the durable contract; the IDE, Kiro, and AWS
-Batch are other clients). Install this agent as an `atx` plugin, point it at a
-repo, and drive the standard AWS Transform workflow:
+Batch are other clients). ATX runs a **transformation definition** against a
+repo; this agent ships one in [`atx/`](../../atx/). Install `atx`, register the
+MCP server, then execute the transformation:
 
 ```bash
-# 1. Install the agent (plugin = Skill + MCP server).
-atx plugin install kernel-forge-aws-transform
+# 1. Install the atx CLI (official AWS Transform install script) and register
+#    the MCP server for it — full steps in atx/README.md.
+curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash
+sed "s#REPLACE_WITH_ABSOLUTE_PATH#$(cd ../.. && pwd)#" ../../atx/mcp.json > ~/.aws/atx/mcp.json
 
-# 2. Point it at a repo containing a CUDA custom kernel.
-atx transform start --repo ./examples/cuda_rmsnorm_migration
+# 2. Execute the transformation definition against this repo.
+atx custom def exec \
+  --code-repository-path ./examples/cuda_rmsnorm_migration \
+  --configuration "additionalPlanContext=Follow atx/transformation-definition/transformation_definition.md"
 
-#    Under the hood the skill drives the MCP tools:
+#    Under the hood the transformation definition drives the MCP tools:
 #      nki_discover_kernels  -> finds the CUDA-backed RMSNorm forward (kind="cuda")
 #      nki_skill_lookup      -> pulls the RMSNorm NKI pattern
 #      nki_generate_kernel   -> AgentCore multi-turn loop (Opus 4.8)
@@ -51,9 +56,10 @@ atx transform start --repo ./examples/cuda_rmsnorm_migration
 #    Requirements (sign off the accuracy + performance budget).
 ```
 
-> The `atx` CLI wraps the exact MCP tool sequence above. If you don't have the
+> The `atx` CLI drives the exact MCP tool sequence above. If you don't have the
 > CLI, the same chain runs from any MCP-aware agent (Claude Code, Kiro, Codex)
-> or directly against the tools — see `tests/test_integration_chain.py`.
+> or directly against the tools — see `tests/test_integration_chain.py` and
+> `tests/test_atx_cli.py`.
 
 ## Record the demo as a video
 

@@ -157,7 +157,11 @@ cited in the README's "End-to-end integration test" section as proven on a live
 documented in the README's "End-to-end integration test" section: it "walks the
 whole migration chain that a real request traverses" (`atx CLI → skill → MCP
 tools → AgentCore runtime → Trn1 reward server`), with a hardware-free tier
-(always on) and a live on-device tier (gated by `NKI_LIVE=1`). This is the
+(always on) and a live on-device tier (gated by `NKI_LIVE=1`). Alongside it,
+`test_atx_cli.py` pins the AWS Transform (`atx`) CLI surface: a hardware-free
+tier checks the `atx/` transformation definition + `atx/mcp.json` wiring, and a
+live tier (gated by `ATX_CLI=1`) shells out to the installed `atx` binary to
+confirm it enumerates the seven MCP tools. This is the
 repo-root/cross-package integration-test directory, distinct from the
 package-local `tests/` directories under `mcp/tests/`,
 `infrastructure/agentcore/tests/`, and `infrastructure/reward_server/tests/`

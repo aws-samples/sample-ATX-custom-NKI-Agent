@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Drive the full CUDA->NKI migration loop end to end.
 
-Shows the real chain the `atx` CLI wraps:
+Shows the real chain `atx custom def exec` drives:
 
     atx CLI -> skill (SKILL.md) -> MCP tools -> AgentCore runtime -> Trn1 reward server
 

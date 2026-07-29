@@ -70,6 +70,8 @@ ATX-nki-agent/
 ├── .codex-plugin/              Codex plugin manifest
 ├── .kiro/                      Kiro-native config (settings/mcp.json + steering/)
 ├── .mcp.json                   MCP server descriptor (uvx-launched)
+├── atx/                        AWS Transform (atx) CLI surface: transformation
+│                                definition + ~/.aws/atx/mcp.json entry
 ├── skills/nki-kernel/          Skill: SKILL.md + references/ (steering)
 ├── mcp/                        kernelforge-nki-mcp Python package (7 tools)
 ├── infrastructure/             Everything that gets deployed to AWS — see
@@ -102,11 +104,16 @@ ATX-nki-agent/
 - An AWS account with access to **Claude on Amazon Bedrock** in `us-east-1`.
 - An EC2 quota for at least one **`trn1.2xlarge`** in `us-east-1`.
 - Permissions to create **AgentCore Runtime endpoints**, an **IAM role** for the AgentCore service, and a **VPC security group** scoped to the client CIDRs that need the reward port.
-- The **`atx` CLI** (AWS Transform) and **`agentcore` CLI** (Bedrock AgentCore) on your developer machine.
+- The **`atx` CLI** ([AWS Transform](https://docs.aws.amazon.com/transform/latest/userguide/custom-get-started.html); `curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash`) and **`agentcore` CLI** (Bedrock AgentCore) on your developer machine — only needed for the ATX-CLI surface and deploy, respectively.
 - **Node 18+ and the AWS CDK** (`npm i -g aws-cdk`) to provision the reward server via `infrastructure/reward_server_cdk/`.
 - Python 3.12+ with `uv`/`uvx` for the MCP server, and any MCP-aware agent (Claude Code, Kiro, or Codex are tested).
 
 ## Install (end users)
+
+The agent is one MCP server with multiple client surfaces. Pick the one that
+matches how you work — both drive the same seven tools.
+
+**IDE / agent (Claude Code, Kiro, Codex):**
 
 ```bash
 /plugin marketplace add <your-marketplace>
@@ -114,6 +121,21 @@ ATX-nki-agent/
 ```
 
 Kiro consumes the same MCP server natively (the repo ships `.kiro/settings/mcp.json`). Then, in your IDE: *"Convert this Triton softmax kernel to NKI for Trainium."*
+
+**AWS Transform (`atx`) CLI:** the `atx` CLI does not use `/plugin` — it runs a
+**transformation definition** and reads its MCP servers from `~/.aws/atx/mcp.json`.
+This repo ships both artifacts under [`atx/`](atx/):
+
+```bash
+curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash   # installs the `atx` binary
+sed "s#REPLACE_WITH_ABSOLUTE_PATH#$(pwd)#" atx/mcp.json > ~/.aws/atx/mcp.json
+atx mcp tools -s kernelforge-nki-mcp                   # confirm atx sees the 7 tools
+atx custom def exec -p ./examples/cuda_rmsnorm_migration \
+  --configuration "additionalPlanContext=Follow atx/transformation-definition/transformation_definition.md"
+```
+
+Full ATX steps (publishing the definition to your account registry, running by
+name, non-interactive/CI usage) are in [`atx/README.md`](atx/README.md).
 
 **The seven MCP tools:** `nki_discover_kernels`, `nki_generate_kernel`, `nki_compile`, `nki_verify`, `nki_profile`, `nki_skill_lookup`, `nki_emit_diff`.
 

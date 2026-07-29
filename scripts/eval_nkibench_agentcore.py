@@ -242,8 +242,6 @@ def eval_claude_nkiagent(
     dtypes: list,
 ) -> dict:
     """Evaluate a task using Claude with native tool use."""
-    import boto3
-
     t0 = time.time()
     meta = json.dumps(task.nki_metadata, indent=2) if task.nki_metadata else ""
     meta_str = f"\nHints: {meta}" if meta else ""
@@ -439,7 +437,6 @@ def eval_vllm_nkiagent(
                 resp_data = json.loads(resp.read())
             choice = resp_data["choices"][0]
             msg = choice["message"]
-            finish_reason = choice.get("finish_reason", "stop")
         except Exception as e:
             logger.warning("  Turn %d: generation error: %s", turn + 1, str(e)[:80])
             continue

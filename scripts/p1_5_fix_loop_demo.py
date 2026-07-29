@@ -290,7 +290,7 @@ def run(args) -> int:
         }
         if not comp.get("success"):
             attempt_rec["outcome"] = "compile_failed"
-            print(f"  compile FAILED")
+            print("  compile FAILED")
             err_blob = "\n".join(
                 comp.get("errors") or comp.get("stderr_tail") or []
             ) or "compile failed (no error detail)"
@@ -302,7 +302,7 @@ def run(args) -> int:
             _save(trace, out_path)
             continue
 
-        print(f"  compile OK")
+        print("  compile OK")
 
         # 3) verify
         ver = verify_kernel(
@@ -341,7 +341,7 @@ def run(args) -> int:
     trace["final"]["wall_time_s"] = round(time.time() - t_start, 1)
     _save(trace, out_path)
 
-    print(f"\n=== summary ===")
+    print("\n=== summary ===")
     print(f"converged: {converged}")
     print(f"attempts:  {len(trace['attempts'])}")
     print(f"wall:      {trace['final']['wall_time_s']}s")

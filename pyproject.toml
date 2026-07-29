@@ -12,6 +12,11 @@ dev = [
     "flask>=3.0",
     "ruff>=0.5",
     "pip-audit>=2.7",
+    # Needed by the live on-device tier of tests/test_integration_chain.py, which
+    # calls invoke_agent_runtime directly. Only the gated live tests import it,
+    # but it belongs here so a plain `pytest` with NKI_LIVE=1 works without
+    # ad-hoc `uv run --with boto3`.
+    "boto3>=1.34.0",
 ]
 
 [tool.uv]

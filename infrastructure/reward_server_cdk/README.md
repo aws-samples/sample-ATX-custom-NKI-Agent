@@ -82,8 +82,8 @@ in this repo — this one, `agentcore_cdk/`, and anything `agentcore deploy`
 provisions internally — shares a single bootstrap.
 
 The reward server source is bundled as a CDK **S3 asset** and pulled by the
-instance role at boot — no git credentials on the box, so it works with the
-private `code.aws.dev` repo. Outputs include `RewardUrlPrivate` (the direct
+instance role at boot — no git credentials on the box, so it works even when the
+source lives in a private repository. Outputs include `RewardUrlPrivate` (the direct
 `http://<private-ip>:5050` endpoint AgentCore calls — set this as
 `REWARD_SERVER_URL`) and `AgentCoreClientSgId` (attach the AgentCore runtime's
 VPC-mode ENIs to this security group). There is no API Gateway invoke URL —

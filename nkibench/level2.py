@@ -1232,7 +1232,7 @@ def _misc_fusion_tasks() -> List[NKIBenchTask]:
             "class Model(nn.Module):\n"
             "    def __init__(self):\n"
             "        super().__init__()\n"
-            f"        self.ce = nn.CrossEntropyLoss()\n\n"
+            "        self.ce = nn.CrossEntropyLoss()\n\n"
             "    def forward(self, logits, targets):\n"
             "        return self.ce(logits, targets)\n"
         )

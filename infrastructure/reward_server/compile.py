@@ -129,7 +129,7 @@ def compile_kernel(payload: dict[str, Any]) -> dict[str, Any]:
             "returncode": r.returncode,
             "errors": errors[-30:],
             "warnings": warnings[-30:],
-            "stderr_tail": [_sanitize(l) for l in stderr_lines[-20:]],
+            "stderr_tail": [_sanitize(line) for line in stderr_lines[-20:]],
             "compile_time_s": round(time.time() - start, 2),
         }
 

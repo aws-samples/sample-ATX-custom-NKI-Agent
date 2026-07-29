@@ -297,7 +297,7 @@ def main() -> int:
                     "rows": rows,
                 }, f, indent=2)
 
-    print(f"\n=== summary ===")
+    print("\n=== summary ===")
     print(f"{'target':12s} {'shape':16s} {'kernel p50':>12s} {'base p50':>12s} {'speedup':>10s}")
     for r in rows:
         kp = (r.get("kernel") or {}).get("latency_median_us")

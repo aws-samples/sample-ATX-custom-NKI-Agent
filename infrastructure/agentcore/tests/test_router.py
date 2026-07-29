@@ -9,8 +9,6 @@ pinned exactly. These guard the rules documented in SKILL.md:
 
 from __future__ import annotations
 
-import pytest
-
 from router import BackendConfig, ModelRouter, TaskSpec
 
 OPUS = "opus-4-8"

@@ -17,7 +17,6 @@ response body, which is exactly what `scripts/eval_nkibench_agentcore.py`'s
 from __future__ import annotations
 
 import json
-import logging
 import os
 import time
 import traceback
@@ -364,8 +363,6 @@ Output dtype matches input dtype. Do NOT include any extra prose. Output ONLY th
 
 
 def _bedrock_single_shot(task: TaskSpec, model_id: str, region: str) -> dict[str, Any]:
-    import boto3
-
     client = boto3.client("bedrock-runtime", region_name=region)
     user_parts = [f"Task: {task.description}"]
     if task.reference_source:
@@ -628,8 +625,6 @@ def _run_multi_turn(
     the model can fix the specific failure. This is what turns single-shot's low
     pass rate into the multi-turn headline rate.
     """
-    import boto3
-
     max_turns = int(event.get("max_turns", 10))
     model_id = backend.model_id or backend.model_arn or os.environ.get(
         "OPUS_MODEL_ID", "us.anthropic.claude-opus-4-8"

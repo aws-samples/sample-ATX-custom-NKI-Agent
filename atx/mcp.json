@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "kernelforge-nki-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "REPLACE_WITH_ABSOLUTE_PATH/mcp",
+        "kernelforge-nki-mcp"
+      ],
+      "disabled": false
+    }
+  }
+}

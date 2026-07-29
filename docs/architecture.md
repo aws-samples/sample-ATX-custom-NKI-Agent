@@ -9,7 +9,7 @@ End-state design for the ATX NKI agent — packaged as an Agent Plugin (Skill + 
 │ CUSTOMER SURFACES                                                     │
 │   IDE: Claude Code · Kiro · Codex                                     │
 │   Console: console.aws.amazon.com/transform                           │
-│   CLI: atx transform --definition pytorch-triton-to-nki               │
+│   CLI: atx custom def exec -n pytorch-triton-to-nki -p <repo>         │
 │   Bulk: AWS Batch (multi-repo, parallel)                              │
 └────────────────────────────────┬──────────────────────────────────────┘
                                  ▼
@@ -54,7 +54,7 @@ Three entry points, all clients of the same MCP server:
 
 - **IDE / agent** — Claude Code, Kiro, Codex via `/plugin install kernel-forge-aws-transform`.
 - **Console** — `console.aws.amazon.com/transform` registers a "PyTorch/Triton → NKI" Custom transformation tile.
-- **CLI / Batch** — `atx transform` and `atx batch` for single-repo and multi-repo flows.
+- **CLI / Batch** — `atx custom def exec` (AWS Transform Custom) runs the transformation definition in `atx/` against a repo; AWS Batch fans it out across many repos. See [`atx/README.md`](../atx/README.md).
 
 Surfaces come and go (Kiro Power → Skill+MCP just happened). The MCP layer is the durable contract.
 
