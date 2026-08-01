@@ -202,17 +202,22 @@ npx cdk deploy
 ```
 
 **3. Point AgentCore back at the reward server — automated.** Reads the
-stack outputs and updates the runtime in-place; no manual editing of
-config.
+stack outputs (`RewardUrlPrivate`, `AgentCoreClientSgId`, `VpcSubnets`),
+patches `REWARD_SERVER_URL` and the VPC network config into `agentcore.json`,
+and redeploys the runtime in place; no manual editing of config. Gated on the
+reward server's SSM bootstrap status, so it never wires up a half-provisioned
+server. Skipping this step leaves `REWARD_SERVER_URL` at its committed
+placeholder and the runtime fails fast with `RewardServerNotConfiguredError`.
 
 ```bash
-pip install flask pytest && pytest      # hardware-free suite (MCP tools, router, auth, diff guard, chain)
+# from infrastructure/reward_server_cdk (where step 2 left you)
+./repoint-agentcore.sh --region us-east-1
 ```
 
 **4. Run the benchmark** against the live reward path:
 
 ```bash
-cd .. && bash scripts/rerun_blog_results_opus48.sh
+cd ../.. && bash scripts/rerun_blog_results_opus48.sh
 ```
 
 See [`infrastructure/reward_server_cdk/README.md`](infrastructure/reward_server_cdk/README.md) for options
