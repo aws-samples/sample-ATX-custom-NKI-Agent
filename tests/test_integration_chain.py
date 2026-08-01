@@ -60,10 +60,30 @@ _REGION = os.environ.get("AWS_REGION", "us-east-1")
 # no surface (atx, IDE, Kiro) can drive the chain. Pin that wiring.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def test_plugin_manifest_wires_skill_and_mcp() -> None:
+def test_claude_plugin_manifest_is_discoverable() -> None:
+    # Claude Code auto-discovers `skills/*/SKILL.md` and `.mcp.json` from the
+    # plugin root, so the manifest carries metadata only — no skills/mcp keys
+    # (matches every plugin in awslabs/agent-plugins). Pin both: the metadata
+    # the marketplace renders, and the files auto-discovery relies on.
     manifest = json.loads((_REPO / ".claude-plugin" / "plugin.json").read_text())
-    assert manifest["mcp"] == ".mcp.json"
-    assert any("nki-kernel" in s for s in manifest["skills"])
+    assert manifest["name"] == "kernel-forge-aws-transform"
+    for key in ("description", "version", "license", "author", "repository", "keywords"):
+        assert manifest[key], f".claude-plugin/plugin.json is missing {key}"
+    assert (_REPO / "skills" / "nki-kernel" / "SKILL.md").is_file()
+    assert (_REPO / ".mcp.json").is_file()
+
+
+def test_codex_plugin_manifest_declares_skill_and_mcp() -> None:
+    # Codex does not auto-discover: the manifest must point at the skills
+    # directory and the MCP descriptor explicitly, and carry `interface` for
+    # the plugin catalog.
+    manifest = json.loads((_REPO / ".codex-plugin" / "plugin.json").read_text())
+    assert manifest["skills"] == "./skills/"
+    assert manifest["mcpServers"] == "./.mcp.json"
+    assert (_REPO / "skills").is_dir()
+    interface = manifest["interface"]
+    for key in ("displayName", "shortDescription", "longDescription", "defaultPrompt"):
+        assert interface[key], f".codex-plugin/plugin.json interface is missing {key}"
 
 
 def test_mcp_descriptor_registers_server() -> None:

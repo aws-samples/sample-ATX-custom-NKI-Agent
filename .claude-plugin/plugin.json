@@ -1,11 +1,31 @@
 {
-  "name": "kernel-forge-aws-transform",
-  "displayName": "Kernel Forge — PyTorch/Triton → NKI",
-  "description": "Convert PyTorch and Triton kernels to NKI for AWS Trainium. Compile, verify on real silicon, and profile against the eager baseline.",
-  "version": "0.1.0",
-  "license": "MIT-0",
-  "skills": [
-    "skills/nki-kernel"
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "description": "Migrate PyTorch and Triton kernels to AWS Trainium NKI. Converts nn.Module.forward and @triton.jit kernels (and hand-written CUDA custom kernels) into @nki.jit kernels, then compiles, numerically verifies, and profiles every candidate on a real Trainium device before emitting a diff.",
+  "homepage": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
+  "keywords": [
+    "aws",
+    "aws-transform",
+    "trainium",
+    "inferentia",
+    "neuron",
+    "nki",
+    "kernel",
+    "pytorch",
+    "triton",
+    "cuda",
+    "gpu-migration",
+    "kernel-optimization",
+    "convert kernel to NKI",
+    "optimize for Trainium",
+    "PyTorch to NKI",
+    "Triton to NKI",
+    "neuronx-cc",
+    "kernel verification"
   ],
-  "mcp": ".mcp.json"
+  "license": "MIT-0",
+  "name": "kernel-forge-aws-transform",
+  "repository": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
+  "version": "0.1.0"
 }

@@ -20,11 +20,17 @@ were part of the source layout.
 **[README.md]** Claude Code plugin manifest. Lets Claude Code install this repo's
 agent as a plugin (`/plugin marketplace add ...` / `/plugin install
 kernel-forge-aws-transform`), wiring up the MCP server and skill for that surface.
+**[inferred]** Metadata only (name/description/version/license/author/repository/
+keywords) — Claude Code auto-discovers `skills/*/SKILL.md` and `.mcp.json` from the
+plugin root, so the manifest does not enumerate them.
 
 ## `.codex-plugin/`
 
 **[README.md]** Codex plugin manifest — the Codex-surface equivalent of
 `.claude-plugin/`, so the same agent installs the same way for Codex users.
+**[inferred]** Codex does not auto-discover, so this manifest additionally points at
+`./skills/` and `./.mcp.json` explicitly and carries an `interface` block (display
+name, descriptions, default prompts, category) for the plugin catalog.
 
 ## `.kiro/`
 
