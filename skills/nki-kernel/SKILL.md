@@ -162,6 +162,10 @@ Read these for deeper guidance during execution:
 - [common-ops.md](references/common-ops.md) — matmul, softmax, layernorm, RMSNorm, attention recipes.
 - [compiler-errors.md](references/compiler-errors.md) — decoder ring for `neuronx-cc` error messages.
 - [workflow.md](references/workflow.md) — the long-form version of this workflow with edge cases.
+- [KernelForgeDeployAccess.json](references/KernelForgeDeployAccess.json) — least-privilege IAM
+  policy for deploying the stack (AgentCore runtime + Trn1 reward server). Attach to the
+  deploying principal; scoped to the `TrainiumRewardServer` / `AgentCore-*` / `CDKToolkit`
+  stacks and `us-east-1`. Not needed to *use* the agent, only to run `make deploy`.
 
 ## Hard rules (apply at all times)
 

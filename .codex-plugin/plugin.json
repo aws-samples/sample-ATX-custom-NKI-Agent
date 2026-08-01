@@ -1,11 +1,54 @@
 {
   "name": "kernel-forge-aws-transform",
-  "displayName": "Kernel Forge — PyTorch/Triton → NKI",
-  "description": "Convert PyTorch and Triton kernels to NKI for AWS Trainium. Compile, verify on real silicon, and profile against the eager baseline.",
   "version": "0.1.0",
+  "description": "Migrate PyTorch and Triton kernels to AWS Trainium NKI. Converts nn.Module.forward and @triton.jit kernels into @nki.jit kernels, then compiles, numerically verifies, and profiles every candidate on a real Trainium device before emitting a diff.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent"
+  },
+  "homepage": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
+  "repository": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
   "license": "MIT-0",
-  "skills": [
-    "skills/nki-kernel"
+  "keywords": [
+    "aws",
+    "aws-transform",
+    "trainium",
+    "inferentia",
+    "neuron",
+    "nki",
+    "kernel",
+    "pytorch",
+    "triton",
+    "cuda",
+    "gpu-migration",
+    "kernel-optimization",
+    "convert kernel to NKI",
+    "optimize for Trainium",
+    "PyTorch to NKI",
+    "Triton to NKI",
+    "neuronx-cc",
+    "kernel verification"
   ],
-  "mcp": ".mcp.json"
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Kernel Forge — PyTorch/Triton → NKI",
+    "shortDescription": "Migrate PyTorch and Triton kernels to AWS Trainium NKI, verified on real silicon.",
+    "longDescription": "Converts PyTorch nn.Module and @triton.jit kernels (and hand-written CUDA custom kernels) into @nki.jit kernels for AWS Trainium and Inferentia. Every candidate is compiled with neuronx-cc, numerically verified against the PyTorch reference with np.allclose, and profiled against the baseline on a real Trainium device before a diff is emitted. Two human gates: you pick the kernels and model backend (Scope), then sign off the accuracy and performance budget (Requirements).",
+    "defaultPrompt": [
+      "Convert this Triton softmax kernel to NKI for Trainium.",
+      "Find the hot kernels in this repo and migrate them to NKI.",
+      "Rewrite this CUDA RMSNorm kernel for Inferentia and verify it on device."
+    ],
+    "developerName": "Amazon Web Services",
+    "category": "Migration",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
+    "privacyPolicyURL": "https://aws.amazon.com/privacy/",
+    "termsOfServiceURL": "https://aws.amazon.com/service-terms/",
+    "brandColor": "#FF9900"
+  }
 }
