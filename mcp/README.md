@@ -23,11 +23,25 @@ uvx --from . kernelforge-nki-mcp
 ## Configure
 
 ```bash
-export AGENTCORE_ENDPOINT="https://<your-agentcore-endpoint>"
+# The deployed AgentCore runtime, addressed by ARN (not a base URL — the
+# data-plane path is /runtimes/{arn}/invocations?qualifier=...):
+export AGENTCORE_ARN="$(aws bedrock-agentcore-control list-agent-runtimes \
+  --region us-east-1 \
+  --query "agentRuntimes[?agentRuntimeName=='atxnkiagent_nki_agent'].agentRuntimeArn" \
+  --output text)"
+export AGENTCORE_QUALIFIER="DEFAULT"          # optional; DEFAULT if unset
 export REWARD_SERVER_URL="http://<trn1-host>:5050"
 export AWS_REGION="us-east-1"
 # AWS credentials via standard chain (env, ~/.aws/credentials, IAM Identity Center)
 ```
+
+`nki_generate_kernel` is the only tool that needs `AGENTCORE_ARN`; the discovery,
+skill-lookup and diff tools are local and work without it. `REWARD_SERVER_URL`
+is only reachable from inside the reward server's VPC — calling `nki_compile` /
+`nki_verify` / `nki_profile` directly from a workstation needs a network path in
+(VPN / Direct Connect / SSM tunnel). The normal flow goes through
+`nki_generate_kernel`, and the AgentCore runtime talks to the reward server for
+you.
 
 ## Tools
 

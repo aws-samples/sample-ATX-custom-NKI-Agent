@@ -1,7 +1,7 @@
 """HTTP clients for the two backend services the MCP tools delegate to.
 
-`AgentCoreClient` is SigV4-signed via boto3's auth helpers against the real
-Bedrock AgentCore `InvokeAgentRuntime` API — that endpoint genuinely verifies
+`AgentCoreClient` calls the real Bedrock AgentCore `InvokeAgentRuntime` API
+through boto3, which signs and routes the request. That API genuinely verifies
 the signature; this path is unaffected by anything below.
 
 `RewardServerClient` still computes and sends SigV4 headers too, but as of
@@ -21,12 +21,14 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from typing import Any
 
 import boto3
 import httpx
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
+from botocore.config import Config as BotoConfig
 
 from .config import Config
 
@@ -54,24 +56,77 @@ def _sigv4_headers(
     return dict(req.headers)
 
 
+class ConfigError(RuntimeError):
+    """Raised when a required piece of runtime configuration is missing."""
+
+
 class AgentCoreClient:
-    """Invokes the AgentCore endpoint that runs the Strands agent loop."""
+    """Invokes the AgentCore runtime that runs the Strands agent loop.
+
+    Goes through boto3's `bedrock-agentcore` data-plane client rather than a
+    hand-rolled signed POST. The runtime is addressed by ARN, and the real
+    invocation path is
+    `POST /runtimes/{url-encoded-arn}/invocations?qualifier={qualifier}` —
+    a shape no `{base_url}/invoke` construction can produce, so hand-rolling it
+    silently 404s. Using the SDK also keeps the signing service name
+    (`bedrock-agentcore`) and the response's streaming body handling correct.
+    This is the same call `cicd/smoke-live.sh`,
+    `examples/cuda_rmsnorm_migration/run_migration.py`, and the live tier of
+    `tests/test_integration_chain.py` make, so every surface drives the runtime
+    identically.
+    """
 
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
+        self._client: Any | None = None
+
+    def _runtime(self) -> Any:
+        # Built lazily: importing the server must not require credentials or a
+        # configured runtime, so that the hardware-free tools stay callable.
+        if self._client is None:
+            session = boto3.Session(region_name=self.cfg.aws_region)
+            if session.get_credentials() is None:
+                raise AuthError(
+                    "no AWS credentials found; configure env, ~/.aws/credentials, "
+                    "or IAM Identity Center"
+                )
+            self._client = session.client(
+                "bedrock-agentcore",
+                config=BotoConfig(
+                    read_timeout=self.cfg.request_timeout_s,
+                    connect_timeout=30,
+                    # The multi-turn loop is not idempotent — a retried invoke
+                    # starts a second generation run and bills for it.
+                    retries={"max_attempts": 1},
+                ),
+            )
+        return self._client
 
     def invoke(self, payload: dict[str, Any]) -> dict[str, Any]:
-        url = f"{self.cfg.agentcore_endpoint.rstrip('/')}/invoke"
-        # Serialize once so the body the signer sees == the body httpx sends.
-        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        headers = {"content-type": "application/json"}
-        headers.update(
-            _sigv4_headers(self.cfg, "POST", url, body, service="bedrock-agent")
+        if not self.cfg.agentcore_arn:
+            raise ConfigError(
+                "AGENTCORE_ARN is not set, so there is no AgentCore runtime to "
+                "call. Set it to the deployed runtime's ARN (see "
+                "`aws bedrock-agentcore-control list-agent-runtimes`) in the "
+                "`env` block of your MCP server config or in the environment "
+                "that launches it."
+            )
+        # runtimeSessionId must be 33-100 characters; uuid4().hex is 32, so the
+        # prefix is load-bearing rather than cosmetic.
+        session_id = f"mcp-{uuid.uuid4().hex}"
+        resp = self._runtime().invoke_agent_runtime(
+            agentRuntimeArn=self.cfg.agentcore_arn,
+            qualifier=self.cfg.agentcore_qualifier,
+            runtimeSessionId=session_id,
+            payload=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
         )
-        with httpx.Client(timeout=self.cfg.request_timeout_s) as client:
-            r = client.post(url, content=body, headers=headers)
-            r.raise_for_status()
-            return r.json()
+        body = resp["response"]
+        raw = (
+            b"".join(body.iter_chunks())
+            if hasattr(body, "iter_chunks")
+            else body.read()
+        )
+        return json.loads(raw)
 
 
 class RewardServerClient:
