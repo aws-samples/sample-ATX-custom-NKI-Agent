@@ -3,7 +3,9 @@
     "kernelforge-nki-mcp": {
       "command": "uvx",
       "args": [
-        "kernelforge-nki-mcp@latest"
+        "--from",
+        "./mcp",
+        "kernelforge-nki-mcp"
       ],
       "env": {},
       "disabled": false,

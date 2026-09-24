@@ -19,7 +19,7 @@ flowchart TB
         end
 
         subgraph MCP_LAYER["MCP server — local process, stdio"]
-            MCP["kernelforge-nki-mcp (PyPI, uvx-launched)\nmcp/src/kernelforge_nki_mcp/\n  server.py · discover.py · diff.py\n  clients.py · skill_db.py · config.py"]
+            MCP["kernelforge-nki-mcp (in-repo, uvx --from <path>)\nmcp/src/kernelforge_nki_mcp/\n  server.py · discover.py · diff.py\n  clients.py · skill_db.py · config.py"]
         end
 
         subgraph DEVTOOL["Local dev tooling (never ships)"]
@@ -109,7 +109,7 @@ flowchart TB
 |---|---|---|---|
 | IDE/agent (Kiro, Claude Code, Codex) | Workstation | `.claude-plugin/`, `.codex-plugin/`, `.kiro/` | N/A — installed by the developer |
 | Skill (steering doc) | Workstation (loaded into the IDE's context) | `skills/nki-kernel/SKILL.md` + `references/` | N/A — ships with the plugin/`.kiro/` |
-| MCP server | Workstation (local process, `uvx`-launched) | `mcp/src/kernelforge_nki_mcp/` | `uvx kernelforge-nki-mcp` (PyPI) — not CDK |
+| MCP server | Workstation (local process, `uvx`-launched) | `mcp/src/kernelforge_nki_mcp/` | `uvx --from <repo>/mcp kernelforge-nki-mcp` (in-repo, never bare-name/PyPI) — not CDK |
 | `agentcore/app.py` (Strands agent code) | **AWS** — packaged and shipped into the AgentCore Runtime | `infrastructure/agentcore/app.py`, `infrastructure/agentcore/router.py` | `infrastructure/agentcore_cdk/atxnkiagent/` via `agentcore deploy` |
 | AgentCore Runtime (managed compute) | **AWS** | AWS-owned (`@aws/agentcore-cdk`'s `AgentCoreApplication` L3 construct) | Same — `agentcore create`/`agentcore deploy` |
 | AgentCore CDK wrapper stack | **AWS** (defines the stack; resources are AWS-managed) | `infrastructure/agentcore_cdk/atxnkiagent/agentcore/cdk/lib/cdk-stack.ts` | `agentcore deploy` (runs CDK under the hood) |

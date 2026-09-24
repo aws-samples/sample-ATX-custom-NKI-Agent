@@ -23,7 +23,7 @@ End-state design for the ATX NKI agent — packaged as an Agent Plugin (Skill + 
 └────────────────────────────────┬──────────────────────────────────────┘
                                  ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│ TOOLS — kernelforge-nki-mcp (PyPI, uvx-launched)                      │
+│ TOOLS — kernelforge-nki-mcp (in-repo mcp/, uvx --from <path>)         │
 │   nki_discover_kernels   nki_generate_kernel   nki_compile            │
 │   nki_verify             nki_profile           nki_skill_lookup       │
 │   nki_emit_diff                                                       │
@@ -77,7 +77,7 @@ References split the existing `kernel-forge/src/env/skill_library/SKILL.md` into
 
 ### 3. Tools — MCP server
 
-`kernelforge-nki-mcp` is a stateless Python package on PyPI, launched via `uvx`. Seven tools:
+`kernelforge-nki-mcp` is a stateless Python package that ships in this repo under `mcp/`, launched via `uvx --from <path-to-mcp> kernelforge-nki-mcp`. It is deliberately **not** published to public PyPI, and the launcher always names a path: a bare `uvx kernelforge-nki-mcp` would resolve the unregistered name from public PyPI, giving whoever registered it code execution inside the agent process. Seven tools:
 
 | Tool | Backend | Purpose |
 |---|---|---|

@@ -18,11 +18,19 @@ This skill requires the `kernelforge-nki-mcp` MCP server. Configure it in your a
   "mcpServers": {
     "kernelforge-nki-mcp": {
       "command": "uvx",
-      "args": ["kernelforge-nki-mcp@latest"]
+      "args": ["--from", "${CLAUDE_PLUGIN_ROOT:-.}/mcp", "kernelforge-nki-mcp"]
     }
   }
 }
 ```
+
+`kernelforge-nki-mcp` is **not** published to public PyPI, so the launcher must
+always name a path — `--from <dir containing the package>`. Never configure it as
+a bare `uvx kernelforge-nki-mcp`: `uvx` resolves bare names from public PyPI, so
+an unclaimed name lets anyone who registers it run code inside this agent
+process, with its credentials and tool permissions. If your client does not
+expand `${CLAUDE_PLUGIN_ROOT}`, substitute the absolute path to this repo's
+`mcp/` directory.
 
 The MCP server holds AWS credentials via the standard chain (env vars, `~/.aws/credentials`, IAM Identity Center). Authentication is just-in-time — only when a tool that hits AWS is actually called.
 

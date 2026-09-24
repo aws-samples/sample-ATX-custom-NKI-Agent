@@ -4,11 +4,21 @@ Stateless MCP server for the Kernel Forge NKI optimization agent. Exposes seven 
 
 ## Install
 
+This package is **not published to public PyPI**. Install or run it from this
+checkout, always naming the path:
+
 ```bash
-uv pip install kernelforge-nki-mcp
-# or run directly:
-uvx kernelforge-nki-mcp@latest
+uv pip install -e .          # from this directory
+# or run directly, without installing:
+uvx --from . kernelforge-nki-mcp
 ```
+
+> Do not launch it as a bare `uvx kernelforge-nki-mcp`. `uvx` resolves bare names
+> from public PyPI, and this name is unregistered there — anyone who claims it
+> would get their code executed inside the agent process that launches the
+> server, with its filesystem access, AWS credentials, environment and tool
+> permissions. Every launcher config in this repo (`.mcp.json`,
+> `.kiro/settings/mcp.json`, `atx/mcp.json`) therefore passes `--from <path>`.
 
 ## Configure
 

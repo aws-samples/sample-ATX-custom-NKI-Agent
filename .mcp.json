@@ -3,7 +3,9 @@
     "kernelforge-nki-mcp": {
       "command": "uvx",
       "args": [
-        "kernelforge-nki-mcp@latest"
+        "--from",
+        "${CLAUDE_PLUGIN_ROOT:-.}/mcp",
+        "kernelforge-nki-mcp"
       ]
     }
   }

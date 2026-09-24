@@ -51,7 +51,9 @@ durable contract" for the whole agent. Implements the seven MCP tools
 (`nki_discover_kernels`, `nki_generate_kernel`, `nki_compile`, `nki_verify`,
 `nki_profile`, `nki_skill_lookup`, `nki_emit_diff`) that every IDE surface calls
 through. **[other doc]** Per `mcp/README.md`, it's a stateless, customer-side
-process launched locally (`uvx kernelforge-nki-mcp@latest`) that SigV4-signs its
+process launched locally (`uvx --from <repo>/mcp kernelforge-nki-mcp` — the
+package is not on public PyPI, so the launcher always names a path instead of
+resolving a bare name) that SigV4-signs its
 own requests to AgentCore and the Trn1 reward server using the standard AWS
 credential chain — no long-lived credentials are stored in the package itself.
 Ships its own `pyproject.toml`, `uv.lock`, and `tests/` — an independent `uv`
@@ -210,7 +212,9 @@ regenerated per run and is not meant to be hand-edited or treated as source.
   auto-generate from `pyproject.toml`) is an open item.
 - **`.mcp.json`** **[README.md]** — "MCP server descriptor (uvx-launched)" in
   the repo-layout tree; the manifest that tells any MCP-aware agent surface how
-  to launch `kernelforge-nki-mcp`.
+  to launch `kernelforge-nki-mcp` — via `uvx --from ${CLAUDE_PLUGIN_ROOT:-.}/mcp`,
+  so the server always comes from this repo rather than an unregistered public
+  PyPI name.
 - **`LICENSE`** **[README.md]** — MIT-0, as stated in the README's License
   section.
 
