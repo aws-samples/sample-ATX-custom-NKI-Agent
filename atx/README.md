@@ -46,13 +46,17 @@ atx mcp tools
 atx mcp tools -s kernelforge-nki-mcp
 ```
 
-> The MCP package is not on public PyPI in this sample, so the config launches
-> the server from your local `mcp/` checkout via `uvx --from <repo>/mcp`. Once
-> `kernelforge-nki-mcp` is published, the entry simplifies to
-> `{"command": "uvx", "args": ["kernelforge-nki-mcp@latest"]}` — same shape as
-> the repo's `.mcp.json`. Either way `uvx` honors the `mcp>=1.0.0,<2` pin in the
-> package's own `pyproject.toml`, so the protocol version is bounded without
-> restating it here.
+> The MCP package is not on public PyPI, so the config launches the server from
+> your local `mcp/` checkout via `uvx --from <repo>/mcp` — the same shape as the
+> repo's `.mcp.json` and `.kiro/settings/mcp.json`. Keep the `--from`:
+> a bare `uvx kernelforge-nki-mcp` would resolve the name from public PyPI,
+> where it is not registered, so anyone who claims it could run code inside the agent process
+> that launches the server, with its credentials and tool permissions. If the
+> name is ever published, point `--from` at that trusted index explicitly
+> (`uvx --index-url ... --from kernelforge-nki-mcp==<version>`) rather than
+> falling back to bare-name resolution. Either way `uvx` honors the
+> `mcp>=1.0.0,<2` pin in the package's own `pyproject.toml`, so the protocol
+> version is bounded without restating it here.
 
 The MCP server needs AWS credentials (standard chain) and the deployed
 AgentCore runtime; set `AGENTCORE_ARN` / `AWS_REGION` in your environment (or in

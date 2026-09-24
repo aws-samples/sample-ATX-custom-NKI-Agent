@@ -17,6 +17,11 @@ dev = [
     # but it belongs here so a plain `pytest` with NKI_LIVE=1 works without
     # ad-hoc `uv run --with boto3`.
     "boto3>=1.34.0",
+    # mcp/tests/test_agentcore_client.py imports kernelforge_nki_mcp.clients,
+    # which imports httpx at module scope for RewardServerClient. The root
+    # `pytest` run collects mcp/tests too (see pytest.ini testpaths), so the
+    # dependency has to be resolvable from here and not just inside mcp/.
+    "httpx>=0.27.0",
 ]
 
 [tool.uv]

@@ -69,7 +69,9 @@ ATX-nki-agent/
 ├── .claude-plugin/             Claude Code plugin manifest
 ├── .codex-plugin/              Codex plugin manifest
 ├── .kiro/                      Kiro-native config (settings/mcp.json + steering/)
-├── .mcp.json                   MCP server descriptor (uvx-launched)
+├── .mcp.json                   MCP server descriptor, in-repo (uvx --from ./mcp)
+├── .mcp.plugin.json            Same server for an installed plugin
+│                                (uvx --from ${CLAUDE_PLUGIN_ROOT}/mcp)
 ├── atx/                        AWS Transform (atx) CLI surface: transformation
 │                                definition + ~/.aws/atx/mcp.json entry
 ├── skills/nki-kernel/          Skill: SKILL.md + references/ (steering)
@@ -121,6 +123,18 @@ matches how you work — both drive the same seven tools.
 ```
 
 Kiro consumes the same MCP server natively (the repo ships `.kiro/settings/mcp.json`). Then, in your IDE: *"Convert this Triton softmax kernel to NKI for Trainium."*
+
+> **The MCP server is launched from this repo, not from PyPI.** `kernelforge-nki-mcp`
+> is not published on public PyPI, so every launcher config here passes
+> `uvx --from <path>` — `.mcp.plugin.json` uses `${CLAUDE_PLUGIN_ROOT}/mcp` (what
+> `/plugin install` loads, via the `mcpServers` key in `.claude-plugin/plugin.json`),
+> `.mcp.json` uses `./mcp` for working inside a clone of this repo,
+> `.kiro/settings/mcp.json` uses `./mcp` relative to the Kiro workspace, and
+> `atx/mcp.json` takes an absolute path. If you write your own config, keep the
+> `--from`: `uvx` resolves bare names from public PyPI, so a bare
+> `uvx kernelforge-nki-mcp` would let anyone who registers that name run code
+> inside your agent process, with its file access, AWS credentials and tool
+> permissions.
 
 **AWS Transform (`atx`) CLI:** the `atx` CLI does not use `/plugin` — it runs a
 **transformation definition** and reads its MCP servers from `~/.aws/atx/mcp.json`.
@@ -240,8 +254,14 @@ Trainium-touching work happens on the reward server.
 ```bash
 # MCP server
 cd mcp && uv pip install -e .
-uvx kernelforge-nki-mcp@local
+uvx --from . kernelforge-nki-mcp
 ```
+
+The `--from .` is not optional shorthand: `kernelforge-nki-mcp` is not published
+to public PyPI, and a bare `uvx kernelforge-nki-mcp` would resolve that name
+from public PyPI — letting whoever registers it execute code inside the agent
+process. Every launcher config here (`.mcp.json`, `.mcp.plugin.json`,
+`.kiro/settings/mcp.json`, `atx/mcp.json`) pins a path for the same reason.
 
 **Run the tests** across the MCP tools, model router, reward-server input
 validation + auth, the diff path-traversal guard, and the end-to-end chain,

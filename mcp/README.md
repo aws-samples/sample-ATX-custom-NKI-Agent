@@ -4,20 +4,51 @@ Stateless MCP server for the Kernel Forge NKI optimization agent. Exposes seven 
 
 ## Install
 
+This package is **not published to public PyPI**, and cannot be: its
+`pyproject.toml` carries the `Private :: Do Not Upload` classifier, which PyPI
+rejects on upload. Install or run it from this checkout, always naming the path:
+
 ```bash
-uv pip install kernelforge-nki-mcp
-# or run directly:
-uvx kernelforge-nki-mcp@latest
+uv pip install -e .          # from this directory
+# or run directly, without installing:
+uvx --from . kernelforge-nki-mcp
 ```
+
+> Do not launch it as a bare `uvx kernelforge-nki-mcp`. `uvx` resolves bare names
+> from public PyPI, and this name is unregistered there — anyone who claims it
+> would get their code executed inside the agent process that launches the
+> server, with its filesystem access, AWS credentials, environment and tool
+> permissions. Every launcher config in this repo (`.mcp.json`,
+> `.mcp.plugin.json`, `.kiro/settings/mcp.json`, `atx/mcp.json`) therefore passes
+> `--from <path>`.
+
+> **Stale-cache trap when iterating on this package.** `uvx --from <local path>`
+> caches the wheel it builds, and will keep serving it after you edit the source.
+> Prefix with `UV_NO_CACHE=1` (or `uv run --project mcp`) when you need your
+> changes to actually take effect.
 
 ## Configure
 
 ```bash
-export AGENTCORE_ENDPOINT="https://<your-agentcore-endpoint>"
+# The deployed AgentCore runtime, addressed by ARN (not a base URL — the
+# data-plane path is /runtimes/{arn}/invocations?qualifier=...):
+export AGENTCORE_ARN="$(aws bedrock-agentcore-control list-agent-runtimes \
+  --region us-east-1 \
+  --query "agentRuntimes[?agentRuntimeName=='atxnkiagent_nki_agent'].agentRuntimeArn" \
+  --output text)"
+export AGENTCORE_QUALIFIER="DEFAULT"          # optional; DEFAULT if unset
 export REWARD_SERVER_URL="http://<trn1-host>:5050"
 export AWS_REGION="us-east-1"
 # AWS credentials via standard chain (env, ~/.aws/credentials, IAM Identity Center)
 ```
+
+`nki_generate_kernel` is the only tool that needs `AGENTCORE_ARN`; the discovery,
+skill-lookup and diff tools are local and work without it. `REWARD_SERVER_URL`
+is only reachable from inside the reward server's VPC — calling `nki_compile` /
+`nki_verify` / `nki_profile` directly from a workstation needs a network path in
+(VPN / Direct Connect / SSM tunnel). The normal flow goes through
+`nki_generate_kernel`, and the AgentCore runtime talks to the reward server for
+you.
 
 ## Tools
 

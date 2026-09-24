@@ -12,7 +12,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Config:
-    agentcore_endpoint: str
+    agentcore_arn: str
+    agentcore_qualifier: str
     reward_server_url: str
     aws_region: str
     request_timeout_s: int
@@ -20,10 +21,17 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         return cls(
-            agentcore_endpoint=os.environ.get(
-                "AGENTCORE_ENDPOINT",
-                "https://agentcore.local.invalid",
-            ),
+            # The deployed runtime is addressed by ARN through the AgentCore
+            # data-plane API (`InvokeAgentRuntime`), not by a base URL: the
+            # invocation path is
+            # `/runtimes/{url-encoded-arn}/invocations?qualifier=...`, which no
+            # single "endpoint" prefix can express. Resolve it with
+            #   aws bedrock-agentcore-control list-agent-runtimes \
+            #     --query "agentRuntimes[?agentRuntimeName=='<name>'].agentRuntimeArn"
+            # the same way cicd/smoke-live.sh does. Empty means "not configured";
+            # AgentCoreClient raises a directed error rather than calling AWS.
+            agentcore_arn=os.environ.get("AGENTCORE_ARN", ""),
+            agentcore_qualifier=os.environ.get("AGENTCORE_QUALIFIER", "DEFAULT"),
             reward_server_url=os.environ.get(
                 # Defaults to loopback for local dev against a stub server.
                 # For a real deployment, set this to the reward server's

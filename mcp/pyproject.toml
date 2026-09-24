@@ -5,6 +5,12 @@ description = "MCP server for the Kernel Forge NKI optimization agent (PyTorch /
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT-0" }
+# PyPI rejects any upload carrying this classifier. This package is launched from
+# a checkout by path (`uvx --from <path>`, see the launcher configs) and must
+# never become an index lookup, so the metadata enforces that rather than just
+# documenting it. Removing this line is a security decision, not a cleanup:
+# see tests/test_mcp_launcher_safety.py.
+classifiers = ["Private :: Do Not Upload"]
 dependencies = [
     "mcp>=1.0.0,<2",
     "boto3>=1.34.0",

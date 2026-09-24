@@ -25,6 +25,7 @@
     "kernel verification"
   ],
   "license": "MIT-0",
+  "mcpServers": "./.mcp.plugin.json",
   "name": "kernel-forge-aws-transform",
   "repository": "https://github.com/aws-samples/sample-ATX-custom-NKI-Agent",
   "version": "0.1.0"

@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "./mcp",
+        "${CLAUDE_PLUGIN_ROOT}/mcp",
         "kernelforge-nki-mcp"
       ]
     }
