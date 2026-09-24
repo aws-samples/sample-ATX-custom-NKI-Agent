@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -144,6 +145,34 @@ def test_project_config_does_not_depend_on_the_plugin_root() -> None:
         ".mcp.json is loaded as a project config where CLAUDE_PLUGIN_ROOT is unset; "
         f"it must stay repo-relative and leave {_PLUGIN_ROOT_TOKEN} to {_PLUGIN_CONFIG}"
     )
+
+
+def test_package_metadata_refuses_publication_to_pypi() -> None:
+    # Pinning the launchers stops this repo resolving the name from PyPI. This
+    # classifier is the other direction: PyPI rejects any upload carrying it, so
+    # the name cannot drift into being a published package that some *other*
+    # config then resolves by name.
+    meta = tomllib.loads((_REPO / "mcp/pyproject.toml").read_text())["project"]
+    assert "Private :: Do Not Upload" in meta.get("classifiers", []), (
+        "mcp/pyproject.toml must keep the `Private :: Do Not Upload` classifier; "
+        "it is what makes an accidental `twine upload` of this package fail"
+    )
+
+
+def test_sbom_does_not_claim_a_pypi_origin_for_the_server() -> None:
+    # A `pkg:pypi/kernelforge-nki-mcp@...` purl tells any SBOM consumer that this
+    # component is fetchable from PyPI. It is not, so resolving that purl either
+    # 404s or fetches whatever a squatter has registered — the same failure the
+    # launcher fix closes, one layer out.
+    sbom = json.loads((_REPO / "SBOM.json").read_text())
+    entries = [c for c in sbom["components"] if c["name"] == _SERVER]
+    assert entries, f"SBOM.json does not list {_SERVER}"
+    for entry in entries:
+        assert not entry["purl"].startswith("pkg:pypi/"), (
+            f"SBOM.json gives {_SERVER} the purl {entry['purl']}, asserting a "
+            "public PyPI origin it does not have; cicd/generate_sbom.py emits "
+            "pkg:generic with a vcs_url for first-party packages"
+        )
 
 
 def test_ide_and_atx_configs_register_the_same_server() -> None:

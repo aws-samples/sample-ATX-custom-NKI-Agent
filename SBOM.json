@@ -2401,7 +2401,7 @@
       "type": "library",
       "name": "atx-nki-agentcore",
       "version": "0.1.0",
-      "purl": "pkg:pypi/atx-nki-agentcore@0.1.0",
+      "purl": "pkg:generic/atx-nki-agentcore@0.1.0?vcs_url=git%2Bhttps://github.com/aws-samples/sample-ATX-custom-NKI-Agent#infrastructure/agentcore",
       "licenses": [
         {
           "license": {
@@ -2413,6 +2413,16 @@
         {
           "name": "source",
           "value": "agentcore"
+        },
+        {
+          "name": "first-party",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/aws-samples/sample-ATX-custom-NKI-Agent"
         }
       ]
     },
@@ -5213,7 +5223,7 @@
       "type": "library",
       "name": "kernelforge-nki-mcp",
       "version": "0.1.0",
-      "purl": "pkg:pypi/kernelforge-nki-mcp@0.1.0",
+      "purl": "pkg:generic/kernelforge-nki-mcp@0.1.0?vcs_url=git%2Bhttps://github.com/aws-samples/sample-ATX-custom-NKI-Agent#mcp",
       "licenses": [
         {
           "license": {
@@ -5225,6 +5235,16 @@
         {
           "name": "source",
           "value": "mcp"
+        },
+        {
+          "name": "first-party",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/aws-samples/sample-ATX-custom-NKI-Agent"
         }
       ]
     },

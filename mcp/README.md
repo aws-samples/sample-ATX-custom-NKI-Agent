@@ -4,8 +4,9 @@ Stateless MCP server for the Kernel Forge NKI optimization agent. Exposes seven 
 
 ## Install
 
-This package is **not published to public PyPI**. Install or run it from this
-checkout, always naming the path:
+This package is **not published to public PyPI**, and cannot be: its
+`pyproject.toml` carries the `Private :: Do Not Upload` classifier, which PyPI
+rejects on upload. Install or run it from this checkout, always naming the path:
 
 ```bash
 uv pip install -e .          # from this directory

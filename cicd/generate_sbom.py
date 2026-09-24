@@ -15,6 +15,11 @@ reward_server/ is intentionally excluded — it is requirements.txt-only,
 installed on the Trn1 itself via CodeArtifact during bootstrap, not from a
 developer machine.
 
+The repo's own packages (FIRST_PARTY_SUBPATHS) are installed into those venvs by
+``uv sync`` and so appear in the scan, but they are not published to any index.
+They get a ``pkg:generic/...?vcs_url=...`` purl instead of ``pkg:pypi/...``, and
+are left out of NOTICE, which covers third-party attribution only.
+
 Run via ``uv run python cicd/generate_sbom.py`` from the repo root.
 """
 
@@ -57,6 +62,22 @@ NODE_MODULES_DIRS: list[tuple[str, Path]] = [
 SBOM_PATH = REPO_ROOT / "SBOM.json"
 NOTICE_PATH = REPO_ROOT / "NOTICE"
 
+REPO_VCS_URL = "git+https://github.com/aws-samples/sample-ATX-custom-NKI-Agent"
+
+# Distributions that live in this repo rather than on an index. They show up in
+# the scanned venvs because `uv sync` installs them (editable), but they are NOT
+# published anywhere: giving them a `pkg:pypi/...` purl asserts a public PyPI
+# origin that does not exist. An SBOM consumer that resolves such a purl either
+# 404s or — the dependency-confusion failure mode — fetches whatever a third
+# party has since registered under that name. Mapped to the repo subdirectory
+# each one is built from, which becomes the purl subpath.
+FIRST_PARTY_SUBPATHS: dict[str, str] = {
+    "kernelforge-nki-mcp": "mcp",
+    "atx-nki-agentcore": "infrastructure/agentcore",
+    "atx-nki-agent-dev": ".",
+    "atxnkiagent": "infrastructure/agentcore_cdk/atxnkiagent/app/atxnkiagent",
+}
+
 
 @dataclass(frozen=True)
 class Component:
@@ -66,8 +87,12 @@ class Component:
         name (str): Package name.
         version (str): Package version.
         license (str): Best-effort license identifier, or "UNKNOWN".
-        purl (str): Package URL (pkg:pypi/... or pkg:npm/...).
+        purl (str): Package URL — `pkg:pypi/...` / `pkg:npm/...` for published
+            dependencies, `pkg:generic/...?vcs_url=...` for the repo's own
+            packages (see FIRST_PARTY_SUBPATHS).
         source (str): Which project/venv or node_modules tree this came from.
+        first_party (bool): True if this package is built from this repo and is
+            not available from any public index.
     """
 
     name: str
@@ -75,6 +100,28 @@ class Component:
     license: str
     purl: str
     source: str
+    first_party: bool = False
+
+
+def _python_purl(name: str, version: str) -> tuple[str, bool]:
+    """Builds the purl for an installed Python distribution.
+
+    Args:
+        name (str): Distribution name as declared in its metadata.
+        version (str): Distribution version.
+
+    Returns:
+        tuple[str, bool]: The purl, and whether the package is first-party.
+    """
+    normalized = name.lower().replace("_", "-")
+    subpath = FIRST_PARTY_SUBPATHS.get(normalized)
+    if subpath is None:
+        return f"pkg:pypi/{name.lower()}@{version}", False
+    # `pkg:generic` with a vcs_url qualifier is the purl spec's form for a
+    # package that is not fetchable from a package registry. `+` is
+    # percent-encoded because a literal `+` in a query string decodes to a space.
+    purl = f"pkg:generic/{normalized}@{version}?vcs_url={REPO_VCS_URL.replace('+', '%2B')}"
+    return (purl if subpath == "." else f"{purl}#{subpath}"), True
 
 
 def _python_license(dist: Distribution) -> str:
@@ -136,13 +183,15 @@ def _collect_python_components(label: str, venv: Path) -> list[Component]:
             if key in seen:
                 continue
             seen.add(key)
+            purl, first_party = _python_purl(name, version)
             components.append(
                 Component(
                     name=name,
                     version=version,
                     license=_python_license(dist),
-                    purl=f"pkg:pypi/{name.lower()}@{version}",
+                    purl=purl,
                     source=label,
+                    first_party=first_party,
                 )
             )
     return components
@@ -256,6 +305,33 @@ def _collect_all_components() -> list[Component]:
     return sorted(components, key=lambda c: (c.name.lower(), c.version))
 
 
+def _sbom_component(c: Component) -> dict[str, Any]:
+    """Renders one Component as a CycloneDX 1.5 component object.
+
+    Args:
+        c (Component): The component to render.
+
+    Returns:
+        dict[str, Any]: The CycloneDX component entry.
+    """
+    entry: dict[str, Any] = {
+        "type": "library",
+        "name": c.name,
+        "version": c.version,
+        "purl": c.purl,
+        "licenses": [{"license": {"id": c.license}}]
+        if c.license != "UNKNOWN"
+        else [{"license": {"name": "UNKNOWN"}}],
+        "properties": [{"name": "source", "value": c.source}],
+    }
+    if c.first_party:
+        # Make the "do not try to fetch this from an index" signal explicit for
+        # consumers that key off properties rather than parsing the purl type.
+        entry["properties"].append({"name": "first-party", "value": "true"})
+        entry["externalReferences"] = [{"type": "vcs", "url": REPO_VCS_URL}]
+    return entry
+
+
 def _write_sbom(components: list[Component]) -> None:
     """Writes a CycloneDX 1.5 SBOM.json listing every component.
 
@@ -266,19 +342,7 @@ def _write_sbom(components: list[Component]) -> None:
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
         "version": 1,
-        "components": [
-            {
-                "type": "library",
-                "name": c.name,
-                "version": c.version,
-                "purl": c.purl,
-                "licenses": [{"license": {"id": c.license}}]
-                if c.license != "UNKNOWN"
-                else [{"license": {"name": "UNKNOWN"}}],
-                "properties": [{"name": "source", "value": c.source}],
-            }
-            for c in components
-        ],
+        "components": [_sbom_component(c) for c in components],
     }
     SBOM_PATH.write_text(json.dumps(sbom, indent=2) + "\n")
     logger.info("wrote %s (%d components)", SBOM_PATH, len(components))
@@ -298,9 +362,15 @@ def _write_notice(components: list[Component]) -> None:
         "package's own metadata. Generated by cicd/generate_sbom.py — do not",
         "edit by hand; re-run the generator instead.",
         "",
+        "This repo's own packages are excluded (they are MIT-0, covered by",
+        "LICENSE, and are not third-party); SBOM.json lists them with a",
+        "pkg:generic purl.",
+        "",
     ]
     by_source: dict[str, list[Component]] = {}
     for component in components:
+        if component.first_party:
+            continue
         by_source.setdefault(component.source, []).append(component)
 
     for source in sorted(by_source):
@@ -311,7 +381,11 @@ def _write_notice(components: list[Component]) -> None:
         lines.append("")
 
     NOTICE_PATH.write_text("\n".join(lines).rstrip() + "\n")
-    logger.info("wrote %s (%d components)", NOTICE_PATH, len(components))
+    logger.info(
+        "wrote %s (%d third-party components)",
+        NOTICE_PATH,
+        sum(len(v) for v in by_source.values()),
+    )
 
 
 def main() -> None:
