@@ -18,7 +18,13 @@ uvx --from . kernelforge-nki-mcp
 > would get their code executed inside the agent process that launches the
 > server, with its filesystem access, AWS credentials, environment and tool
 > permissions. Every launcher config in this repo (`.mcp.json`,
-> `.kiro/settings/mcp.json`, `atx/mcp.json`) therefore passes `--from <path>`.
+> `.mcp.plugin.json`, `.kiro/settings/mcp.json`, `atx/mcp.json`) therefore passes
+> `--from <path>`.
+
+> **Stale-cache trap when iterating on this package.** `uvx --from <local path>`
+> caches the wheel it builds, and will keep serving it after you edit the source.
+> Prefix with `UV_NO_CACHE=1` (or `uv run --project mcp`) when you need your
+> changes to actually take effect.
 
 ## Configure
 

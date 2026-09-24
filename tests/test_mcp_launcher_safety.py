@@ -12,9 +12,23 @@ variables and tool permissions.
 Every launcher config in the repo must therefore name a *path* for the package
 (`uvx --from <path> kernelforge-nki-mcp`) or an explicit trusted index, so
 resolution can never fall through to public PyPI. These tests pin that for all
-three client surfaces — Claude Code / Codex (`.mcp.json`), Kiro
-(`.kiro/settings/mcp.json`), and the `atx` CLI (`atx/mcp.json`) — and for the
-config snippets the docs tell users to copy.
+four client surfaces — Claude Code / Codex in-repo (`.mcp.json`), the installed
+plugin (`.mcp.plugin.json`), Kiro (`.kiro/settings/mcp.json`), and the `atx` CLI
+(`atx/mcp.json`) — and for the config snippets the docs tell users to copy.
+
+Why two Claude configs rather than one with a defaulted placeholder: Claude Code
+substitutes `${CLAUDE_PLUGIN_ROOT}` only for that exact token. Verified
+empirically against a locally installed copy of this plugin:
+
+    | config file        | `${CLAUDE_PLUGIN_ROOT}` | `${CLAUDE_PLUGIN_ROOT:-.}` |
+    | installed plugin   | plugin dir              | `.`  (wrong dir)           |
+    | project repo root  | unset -> literal        | `.`  (repo root, correct)  |
+
+So a single file cannot serve both: the `:-` form silently sends the installed
+plugin to the caller's cwd, and the bare form leaves an unexpanded literal in a
+project config. `.claude-plugin/plugin.json` therefore points `mcpServers` at
+`.mcp.plugin.json` (bare token, plugin dir), while `.mcp.json` stays relative
+for in-repo use. Both are `--from <path>`; neither can reach an index.
 """
 
 from __future__ import annotations
@@ -31,9 +45,16 @@ _SERVER = "kernelforge-nki-mcp"
 # Every launcher config that can spawn the MCP server.
 _CONFIGS = (
     Path(".mcp.json"),
+    Path(".mcp.plugin.json"),
     Path(".kiro/settings/mcp.json"),
     Path("atx/mcp.json"),
 )
+
+# The config Claude Code loads when the plugin is installed from a marketplace,
+# and the manifest key that selects it.
+_PLUGIN_CONFIG = Path(".mcp.plugin.json")
+_PLUGIN_MANIFEST = Path(".claude-plugin/plugin.json")
+_PLUGIN_ROOT_TOKEN = "${CLAUDE_PLUGIN_ROOT}"
 
 # Resolution modes that do NOT touch public PyPI's bare-name namespace.
 _PINNING_FLAGS = ("--from", "--index-url", "--default-index", "--index")
@@ -43,6 +64,12 @@ def _entry(config: Path) -> dict:
     cfg = json.loads((_REPO / config).read_text())
     assert _SERVER in cfg["mcpServers"], f"{config} does not register {_SERVER}"
     return cfg["mcpServers"][_SERVER]
+
+
+def _from_target(config: Path) -> str:
+    args = _entry(config).get("args", [])
+    assert "--from" in args, f"{config} does not pass --from"
+    return args[args.index("--from") + 1]
 
 
 @pytest.mark.parametrize("config", _CONFIGS, ids=lambda p: str(p))
@@ -84,6 +111,38 @@ def test_launcher_from_target_is_a_path_not_a_package_name(config: Path) -> None
     assert "/" in target, f"{config} `--from {target}` is not a path"
     assert target.endswith("/mcp"), (
         f"{config} `--from {target}` should point at this repo's `mcp/` package directory"
+    )
+
+
+def test_plugin_manifest_selects_the_plugin_root_config() -> None:
+    # Without this key Claude Code auto-discovers `.mcp.json`, whose relative
+    # `./mcp` resolves against the *caller's* cwd once the plugin is installed
+    # outside this checkout — the server then fails to start from anywhere else.
+    manifest = json.loads((_REPO / _PLUGIN_MANIFEST).read_text())
+    assert manifest.get("mcpServers") == f"./{_PLUGIN_CONFIG}", (
+        f"{_PLUGIN_MANIFEST} must point mcpServers at ./{_PLUGIN_CONFIG}; "
+        "otherwise the installed plugin falls back to the repo-relative config"
+    )
+
+
+def test_plugin_config_anchors_on_the_plugin_root() -> None:
+    target = _from_target(_PLUGIN_CONFIG)
+    assert target == f"{_PLUGIN_ROOT_TOKEN}/mcp", (
+        f"{_PLUGIN_CONFIG} must use the bare {_PLUGIN_ROOT_TOKEN} token. Claude Code "
+        f"substitutes it only in that exact form: {_PLUGIN_ROOT_TOKEN[:-1]}:-.}} is treated "
+        "as an ordinary unset variable with a default, so it collapses to the "
+        "caller's cwd instead of the installed plugin directory."
+    )
+
+
+def test_project_config_does_not_depend_on_the_plugin_root() -> None:
+    # Mirror image of the above: in a project-scope config the variable is never
+    # set, and with no default Claude Code passes the literal `${...}` through as
+    # a path, so the server cannot start inside this checkout.
+    target = _from_target(Path(".mcp.json"))
+    assert "CLAUDE_PLUGIN_ROOT" not in target, (
+        ".mcp.json is loaded as a project config where CLAUDE_PLUGIN_ROOT is unset; "
+        f"it must stay repo-relative and leave {_PLUGIN_ROOT_TOKEN} to {_PLUGIN_CONFIG}"
     )
 
 

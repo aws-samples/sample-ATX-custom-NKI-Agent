@@ -20,9 +20,12 @@ were part of the source layout.
 **[README.md]** Claude Code plugin manifest. Lets Claude Code install this repo's
 agent as a plugin (`/plugin marketplace add ...` / `/plugin install
 kernel-forge-aws-transform`), wiring up the MCP server and skill for that surface.
-**[inferred]** Metadata only (name/description/version/license/author/repository/
-keywords) — Claude Code auto-discovers `skills/*/SKILL.md` and `.mcp.json` from the
-plugin root, so the manifest does not enumerate them.
+**[inferred]** Mostly metadata (name/description/version/license/author/repository/
+keywords) — Claude Code auto-discovers `skills/*/SKILL.md` from the plugin root, so
+the manifest does not enumerate skills. It does set `mcpServers` to
+`./.mcp.plugin.json`, because auto-discovery would otherwise pick up `.mcp.json`,
+whose repo-relative `./mcp` resolves against the caller's working directory once
+the plugin is installed outside this checkout.
 
 ## `.codex-plugin/`
 
@@ -212,9 +215,15 @@ regenerated per run and is not meant to be hand-edited or treated as source.
   auto-generate from `pyproject.toml`) is an open item.
 - **`.mcp.json`** **[README.md]** — "MCP server descriptor (uvx-launched)" in
   the repo-layout tree; the manifest that tells any MCP-aware agent surface how
-  to launch `kernelforge-nki-mcp` — via `uvx --from ${CLAUDE_PLUGIN_ROOT:-.}/mcp`,
-  so the server always comes from this repo rather than an unregistered public
-  PyPI name.
+  to launch `kernelforge-nki-mcp` — via `uvx --from ./mcp`, so the server always
+  comes from this checkout rather than an unregistered public PyPI name.
+- **`.mcp.plugin.json`** **[inferred]** — the same descriptor for an installed
+  plugin, anchored on `${CLAUDE_PLUGIN_ROOT}/mcp` and selected by the
+  `mcpServers` key in `.claude-plugin/plugin.json`. Two files because Claude Code
+  substitutes that variable only as the exact token: `${CLAUDE_PLUGIN_ROOT:-.}`
+  falls back to the caller's cwd in an installed plugin, while the bare token is
+  left as a literal path in a project-scope config. Both halves are pinned by
+  `tests/test_mcp_launcher_safety.py`.
 - **`LICENSE`** **[README.md]** — MIT-0, as stated in the README's License
   section.
 

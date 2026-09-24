@@ -11,14 +11,14 @@ Domain expertise for rewriting PyTorch and Triton kernels as `@nki.jit` kernels 
 
 ## Prerequisites
 
-This skill requires the `kernelforge-nki-mcp` MCP server. Configure it in your agent's MCP settings (this plugin ships an `.mcp.json` that does this for you):
+This skill requires the `kernelforge-nki-mcp` MCP server. Installing this plugin configures it for you (`.mcp.plugin.json`, anchored on the plugin directory). To wire it up by hand, point `--from` at the `mcp/` directory of a checkout:
 
 ```json
 {
   "mcpServers": {
     "kernelforge-nki-mcp": {
       "command": "uvx",
-      "args": ["--from", "${CLAUDE_PLUGIN_ROOT:-.}/mcp", "kernelforge-nki-mcp"]
+      "args": ["--from", "/absolute/path/to/this/repo/mcp", "kernelforge-nki-mcp"]
     }
   }
 }
